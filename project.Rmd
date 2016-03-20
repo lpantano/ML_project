@@ -26,6 +26,8 @@ library(ggplot2)
 * Project: Predict how well an exercise is done using data from accelerometers on the belt, forearm, arm, and dumbell of 6 participant
 
 
+Link to the initial information: http://groupware.les.inf.puc-rio.br/har
+
 ```{r load}
 set.seed(42)
 training = read.csv("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv", row.names = "X")
@@ -185,16 +187,25 @@ if (file.exists("model.rda")){
     model = train( classe ~., data=tr, method='rf', preProcess="scale")
     save(model, file="model.rda")
 }
-
-p1 = predict(model, te)
-confusionMatrix(p1,te$classe)
 ```
 
 We got a good accuracy. Even it seems it's over-fitting.
 
-The expected **out-sample-error** is very low. According to the model the accuracy SD
-is 0.2%. When using the test data to calculate it, it showed 0.2% of mis-clasification.
+The expected **out-sample-error** is very low. According to the model the error
+is 2%. 
+
+Comparing with the test data we can estimate better this error:
+
+```{r confusionMA}
+p1 = predict(model, te)
+confusionMatrix(p1,te$classe)
+```
+
+When using the test data to calculate it, it showed 1.37% of mis-clasification.
 Then we expect none or one wrong prediction in the test data we have to submit for the course.
+
+Probably using the 52 columns will give better results, but this is quite easy to 
+interpret and has a high accuracy.
 
 ## caveat
 

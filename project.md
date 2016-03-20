@@ -14,12 +14,9 @@ output:
 * Project: Predict how well an exercise is done using data from accelerometers on the belt, forearm, arm, and dumbell of 6 participant
 
 
+Link to the initial information: http://groupware.les.inf.puc-rio.br/har
 
-```r
-set.seed(42)
-training = read.csv("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv", row.names = "X")
-testing = read.csv("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv", row.names="X")
-```
+
 
 ## Data inspection
 
@@ -28,10 +25,6 @@ First step is to understand the data. How many variables, distribution, NAs valu
 The table has 19622, 159 rows and columns. Let's see the names of the columns
 to have an idea of what they are.
 
-
-```r
-names(training)
-```
 
 ```
   [1] "user_name"                "raw_timestamp_part_1"    
@@ -132,35 +125,11 @@ I will remove these rows, since they are summarization of the others,
 and the others have NA values for these columns.
 
 
-```r
-remove_stats=grepl("stddev",names(training)) | 
-    grepl("avg",names(training))  | 
-    grepl("skewness",names(training)) |
-    grepl("kurtosis",names(training)) |
-    grepl("var_",names(training)) |
-    grepl("amplitude_",names(training)) |
-    grepl("max",names(training)) |
-    grepl("min",names(training))
-
-clean_train = (training[training$new_window=="no",FALSE==remove_stats])
-for (ncol in 7:(ncol(clean_train)-1)){
-    clean_train[,ncol] <- as.numeric(as.character(clean_train[,ncol]))
-}
-
-clean_test = (testing[,FALSE==remove_stats])
-for (ncol in 7:(ncol(clean_test)-1)){
-    clean_test[,ncol] <- as.numeric(as.character(clean_test[,ncol]))
-}
-```
 
 After that, we work with `dim(clean_train)[2]` columns. Still a little confuse
 to understand the data, but if we select only one place (`forearm`), let's
 see the how many variables we have for that:
 
-
-```r
-names(clean_train)[grepl('forearm', names(clean_train))]
-```
 
 ```
  [1] "roll_forearm"        "pitch_forearm"       "yaw_forearm"        
@@ -181,10 +150,6 @@ columns for each position and gadget.
 For curiosity, want to check if all different classes are equally represented:
 
 
-```r
-table(clean_train$classe)
-```
-
 ```
 
    A    B    C    D    E 
@@ -193,43 +158,7 @@ table(clean_train$classe)
 
 That's good, because shouldn't be super bias to any of them.
 
-
-```r
-.clean = function(df, grep=NULL){
-    pred=df$classe
-    if (!is.null(grep)){
-        df =df[,grepl(grep,names(df))]
-        names(df) = gsub(grep,"",names(df))
-    }
-    melt(df) %>% separate(variable,sep="_",into=c("type","place")) %>% mutate(classe=pred)
-}
-
-ggplot(.clean(clean_train, grep="total_"), aes(x=value,fill=place)) +
-    geom_density(alpha=0.5) + facet_wrap(~classe) + ggtitle("total_ column")
-```
-
-![](figure/unnamed-chunk-1-1.png)
-
-```r
-ggplot(.clean(clean_train, grep="^accel_"), aes(x=value,fill=type)) +
-    geom_density(alpha=0.5) + facet_wrap(~classe) + ggtitle("accel_ column")
-```
-
-![](figure/unnamed-chunk-1-2.png)
-
-```r
-ggplot(.clean(clean_train, grep="magnet_"), aes(x=value,fill=type)) +
-    geom_density(alpha=0.5) + facet_wrap(~classe) + ggtitle("magnet_ column")
-```
-
-![](figure/unnamed-chunk-1-3.png)
-
-```r
-ggplot(.clean(clean_train, grep="gyros_"), aes(x=value,fill=type)) +
-    geom_density(alpha=0.5) + facet_wrap(~classe) + ggtitle("gyros_ column")
-```
-
-![](figure/unnamed-chunk-1-4.png)
+![](figure/unnamed-chunk-1-1.png)![](figure/unnamed-chunk-1-2.png)![](figure/unnamed-chunk-1-3.png)![](figure/unnamed-chunk-1-4.png)
 
 
 First, numbers are different between all variables we have here, so we would need
@@ -238,21 +167,6 @@ to preProcess the data, maybe scaling is enough.
 But there is simpler data, only the values for each gadget and position may be
 enough for this prediction. This is the relationship between theese columns
 and the classes.
-
-
-```r
-raw = !(grepl("total",names(clean_train))) &
-    !(grepl("acc",names(clean_train))) &
-    !(grepl("magnet",names(clean_train))) &
-    !(grepl("gyros",names(clean_train))) &
-    !(grepl("timestamp",names(clean_train))) &
-    !(grepl("window",names(clean_train))) &
-    !(grepl("user_name",names(clean_train)))
-
-ggplot(.clean(clean_train[,raw]), aes(x=value,fill=place)) +
-    geom_density(alpha=0.5) +
-    facet_wrap(~classe)
-```
 
 ![](figure/simple-values-1.png)
 
@@ -284,21 +198,14 @@ what is the best transformation, or even what columns to use, or model.
 This is the confusionMatrix:
 
 
-```r
-adData=clean_train[,raw]
-inTrain = createDataPartition(adData$classe, p = 3/4)[[1]]
-tr = adData[ inTrain,]
-te = adData[-inTrain,]
-if (file.exists("model.rda")){
-    load("model.rda")
-}else{
-    model = train( classe ~., data=tr, method='rf', preProcess="scale")
-    save(model, file="model.rda")
-}
 
-p1 = predict(model, te)
-confusionMatrix(p1,te$classe)
-```
+We got a good accuracy. Even it seems it's over-fitting.
+
+The expected **out-sample-error** is very low. According to the model the error
+is 2%. 
+
+Comparing with the test data we can estimate better this error:
+
 
 ```
 Confusion Matrix and Statistics
@@ -334,11 +241,11 @@ Detection Prevalence   0.2861   0.1920   0.1758   0.1639   0.1822
 Balanced Accuracy      0.9980   0.9882   0.9913   0.9923   0.9953
 ```
 
-We got a good accuracy. Even it seems it's over-fitting.
-
-The expected **out-sample-error** is very low. According to the model the accuracy SD
-is 0.2%. When using the test data to calculate it, it showed 0.2% of mis-clasification.
+When using the test data to calculate it, it showed 1.37% of mis-clasification.
 Then we expect none or one wrong prediction in the test data we have to submit for the course.
+
+Probably using the 52 columns will give better results, but this is quite easy to 
+interpret and has a high accuracy.
 
 ## caveat
 
