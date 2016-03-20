@@ -1,0 +1,203 @@
+---
+title: "ML course final project"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    theme: readable
+    highlight: zenburn
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+knitr::opts_chunk$set(dev="png",echo=FALSE,
+                      highlight=TRUE, autodep=TRUE,
+                      comment='', fig.cap='',
+                      tidy.opts=list(keep.blank.line=FALSE, width.cutoff=200),
+                      cache=TRUE,warning=FALSE,message=FALSE,
+                      error=FALSE, fig.width = 11, fig.height = 9)
+options(bitmapType = 'cairo')
+
+library(dplyr)
+library(ggplot2)
+```
+
+Author: Lorena Pantano Rubino
+Project: Predict how well an exercise is done using data from accelerometers on the belt, forearm, arm, and dumbell of 6 participant
+
+
+Load the data from the server.
+
+```{r load}
+set.seed(42)
+training = read.csv("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv", row.names = "X")
+testing = read.csv("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv", row.names="X")
+```
+
+## Data inspection
+
+First step is to understand the data. How many variables, distribution, NAs values ...etc
+
+The table has `r dim(training)` rows and columns. Let's see the names of the columns
+to have an idea of what they are.
+
+```{r names}
+names(training)
+```
+
+There is a lot of information here. It seems there are 3 different gadgets to
+read position and movement. Then, the 4 different location in the body as
+the web page described.
+
+Something interesting is to know how many users there are: `r unique(training$user_name)`.
+Note that this model will be very biased to these users. Is not a big 
+representation to predict for any other person.
+
+There is the values of `new` windows, and it seems every time there is 
+a new windows, there is all these variables summarizing that window:
+skewness, kurtosis, average, variation ... etc.
+
+I will remove these rows, since they are summarization of the others, 
+and the others have NA values for these columns.
+
+```{r data-inspection}
+remove_stats=grepl("stddev",names(training)) | 
+    grepl("avg",names(training))  | 
+    grepl("skewness",names(training)) |
+    grepl("kurtosis",names(training)) |
+    grepl("var_",names(training)) |
+    grepl("amplitude_",names(training)) |
+    grepl("max",names(training)) |
+    grepl("min",names(training))
+
+clean_train = (training[training$new_window=="no",FALSE==remove_stats])
+for (ncol in 7:(ncol(clean_train)-1)){
+    clean_train[,ncol] <- as.numeric(as.character(clean_train[,ncol]))
+}
+
+clean_test = (testing[,FALSE==remove_stats])
+for (ncol in 7:(ncol(clean_test)-1)){
+    clean_test[,ncol] <- as.numeric(as.character(clean_test[,ncol]))
+}
+
+```
+
+After that, we work with `dim(clean_train)[2]` columns. Still a little confuse
+to understand the data, but if we select only one place (`forearm`), let's
+see the how many variables we have for that:
+
+```{r forearm}
+names(clean_train)[grepl('forearm', names(clean_train))]
+```
+
+That's help. The next step is to see the distribution values.
+
+## Data desciption
+
+I would like to see the distribution and some way the correlation with the
+variable `classe`. I will show figures for `accel`, `magnet`, `gyros` and `total`
+for each position and gadget.
+
+For curiosity, want to check if all different classes are equally represented:
+
+```{r classe}
+table(clean_train$classe)
+```
+
+That's good, because shouldn't be super bias to any of them.
+
+```{r, message=FALSE}
+
+.clean = function(df, grep=NULL){
+    pred=df$classe
+    if (!is.null(grep)){
+        df =df[,grepl(grep,names(df))]
+        names(df) = gsub(grep,"",names(df))
+    }
+    melt(df) %>% separate(variable,sep="_",into=c("type","place")) %>% mutate(classe=pred)
+}
+
+ggplot(.clean(clean_train, grep="total_"), aes(x=value,fill=place)) +
+    geom_density(alpha=0.5) + facet_wrap(~classe) + ggtitle("total_ column")
+ggplot(.clean(clean_train, grep="^accel_"), aes(x=value,fill=type)) +
+    geom_density(alpha=0.5) + facet_wrap(~classe) + ggtitle("accel_ column")
+ggplot(.clean(clean_train, grep="magnet_"), aes(x=value,fill=type)) +
+    geom_density(alpha=0.5) + facet_wrap(~classe) + ggtitle("magnet_ column")
+ggplot(.clean(clean_train, grep="gyros_"), aes(x=value,fill=type)) +
+    geom_density(alpha=0.5) + facet_wrap(~classe) + ggtitle("gyros_ column")
+```
+
+
+First, numbers are different between all variables we have here, so we would need
+to preProcess the data, maybe scaling is enough.
+
+Looking only to what the values of the gadget at different positions may tell us,
+that may be enough to explain the different classes.
+
+```{r simple-values}
+raw = !(grepl("total",names(clean_train))) &
+    !(grepl("acc",names(clean_train))) &
+    !(grepl("magnet",names(clean_train))) &
+    !(grepl("gyros",names(clean_train))) &
+    !(grepl("timestamp",names(clean_train))) &
+    !(grepl("window",names(clean_train))) &
+    !(grepl("user_name",names(clean_train)))
+
+ggplot(.clean(clean_train[,raw]), aes(x=value,fill=place)) +
+    geom_density(alpha=0.5) +
+    facet_wrap(~classe)
+```
+
+There are some clear difference from different positions, for sure
+these variables seem important.
+
+## Model
+
+I will train the data with random forest because it can handle all 
+these columns, there are many rows, and it seemed to work pretty 
+well during the course.
+
+I didn't understand pretty well if I had to use a testing subset
+to test my model, but I did it since it is a big data set.
+
+As predictor will use only the ones from the previous figure. The basic
+information from the gadgets: `r names(clean_train)[raw]`.
+
+I will scale the predictors since they have very different values.
+What I would do in a longer analysis, it would be to create a validation data set to decide
+what is the best transformation, or even what columns to use, or model.
+
+
+```{r random-forest-with-scale}
+adData=clean_train[,raw]
+inTrain = createDataPartition(adData$classe, p = 3/4)[[1]]
+tr = adData[ inTrain,]
+te = adData[-inTrain,]
+if (file.exists("model.rda")){
+    load("model.rda")
+}else{
+    model = train( classe ~., data=tr, method='rf', preProcess="scale")
+    save(model, file="model.rda")
+}
+
+p1 = predict(model, te)
+confusionMatrix(p1,te$classe)
+```
+
+We got a good accuracy. Even it seems it's over-fitting.
+
+
+## caveat
+
+I think the error out of sample will be bigger, as always happen. What it concerns 
+me that only 6 individuals are here, so I have no clue what it could happen if this
+model is used to predict many more individuals, without having an instructor
+to tell them how to do the exercise wrong. So, there are many aspect to study here
+to get to a model that really works and can predict a well-done exercise from a
+bad-one.
+
+```{r test,eval=FALSE,echo=FALSE}
+# p1 = predict(model, clean_test) # this to answer the final test.
+```
+
+
