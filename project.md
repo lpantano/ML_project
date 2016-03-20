@@ -10,8 +10,8 @@ output:
 
 
 
-Author: Lorena Pantano Rubino
-Project: Predict how well an exercise is done using data from accelerometers on the belt, forearm, arm, and dumbell of 6 participant
+* Author: Lorena Pantano Rubino
+* Project: Predict how well an exercise is done using data from accelerometers on the belt, forearm, arm, and dumbell of 6 participant
 
 
 
