@@ -14,8 +14,6 @@ Author: Lorena Pantano Rubino
 Project: Predict how well an exercise is done using data from accelerometers on the belt, forearm, arm, and dumbell of 6 participant
 
 
-Load the data from the server.
-
 
 
 ## Data inspection
@@ -110,11 +108,11 @@ to have an idea of what they are.
 ```
 
 There is a lot of information here. It seems there are 3 different gadgets to
-read position and movement. Then, the 4 different location in the body as
+read position and movement. Then, the 4 different location in the body, as
 the web page described.
 
 Something interesting is to know how many users there are: carlitos, pedro, adelmo, charles, eurico, jeremy.
-Note that this model will be very biased to these users. Is not a big 
+Note that this model will be very biased to these users. It's not a big 
 representation to predict for any other person.
 
 There is the values of `new` windows, and it seems every time there is 
@@ -141,11 +139,11 @@ see the how many variables we have for that:
 
 That's help. The next step is to see the distribution values.
 
-## Data desciption
+## Data description
 
 I would like to see the distribution and some way the correlation with the
 variable `classe`. I will show figures for `accel`, `magnet`, `gyros` and `total`
-for each position and gadget.
+columns for each position and gadget.
 
 For curiosity, want to check if all different classes are equally represented:
 
@@ -164,13 +162,19 @@ That's good, because shouldn't be super bias to any of them.
 First, numbers are different between all variables we have here, so we would need
 to preProcess the data, maybe scaling is enough.
 
-Looking only to what the values of the gadget at different positions may tell us,
-that may be enough to explain the different classes.
+But there is simpler data, only the values for each gadget and position may be
+enough for this prediction. This is the relationship between theese columns
+and the classes.
 
 ![](figure/simple-values-1.png)
 
 There are some clear difference from different positions, for sure
 these variables seem important.
+
+
+**Note**: each of the different gadgets have very different values
+and the previous figure doesn't show that, but the result is the same.
+There are different patterns as well.
 
 ## Model
 
@@ -188,6 +192,7 @@ I will scale the predictors since they have very different values.
 What I would do in a longer analysis, it would be to create a validation data set to decide
 what is the best transformation, or even what columns to use, or model.
 
+This is the confusionMatrix:
 
 
 ```
@@ -229,11 +234,11 @@ We got a good accuracy. Even it seems it's over-fitting.
 
 ## caveat
 
-I think the error out of sample will be bigger, as always happen. What it concerns 
-me that only 6 individuals are here, so I have no clue what it could happen if this
+I think the error out of sample will be bigger, as always happens. I am concern about
+ that only 6 individuals are in this data, so I have no clue what it could happen if this
 model is used to predict many more individuals, without having an instructor
-to tell them how to do the exercise wrong. So, there are many aspect to study here
-to get to a model that really works and can predict a well-done exercise from a
+to tell them how to do the exercise wrong. So, there are many aspect to study before
+getting a model that really works and can predict a well-done exercise from a
 bad-one.
 
 
