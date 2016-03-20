@@ -187,6 +187,7 @@ if (file.exists("model.rda")){
     model = train( classe ~., data=tr, method='rf', preProcess="scale")
     save(model, file="model.rda")
 }
+model$finalMod
 ```
 
 We got a good accuracy. Even it seems it's over-fitting.

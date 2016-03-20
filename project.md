@@ -198,6 +198,23 @@ what is the best transformation, or even what columns to use, or model.
 This is the confusionMatrix:
 
 
+```
+
+Call:
+ randomForest(x = x, y = y, mtry = param$mtry) 
+               Type of random forest: classification
+                     Number of trees: 500
+No. of variables tried at each split: 7
+
+        OOB estimate of  error rate: 1.16%
+Confusion matrix:
+     A    B    C    D    E class.error
+A 4088   12    0    2    2 0.003898635
+B   17 2727   42    2    1 0.022230190
+C    0   19 2474   19    2 0.015910899
+D    1    3   17 2338    2 0.009741635
+E    0    7   11    8 2620 0.009826153
+```
 
 We got a good accuracy. Even it seems it's over-fitting.
 
