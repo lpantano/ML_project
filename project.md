@@ -219,7 +219,7 @@ E    0    7   11    8 2620 0.009826153
 We got a good accuracy. Even it seems it's over-fitting.
 
 The expected **out-sample-error** is very low. According to the model the error
-is 2%. 
+is 2% (1.16%). 
 
 Comparing with the test data we can estimate better this error:
 
