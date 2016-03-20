@@ -10,7 +10,7 @@ output:
 
 ```{r setup, include=FALSE}
 library(knitr)
-knitr::opts_chunk$set(dev="png",echo=FALSE,
+knitr::opts_chunk$set(dev="png",echo=TRUE,
                       highlight=TRUE, autodep=TRUE,
                       comment='', fig.cap='',
                       tidy.opts=list(keep.blank.line=FALSE, width.cutoff=200),
@@ -157,14 +157,15 @@ There are different patterns as well.
 
 ## Model
 
-I will train the data with random forest because it can handle all 
+I will train the data with **random forest** because it can handle all 
 these columns, there are many rows, and it seemed to work pretty 
 well during the course.
 
-I didn't understand pretty well if I had to use a testing subset
-to test my model, but I did it since it is a big data set.
+**cross-validation** was done subsampling the training table into two datasets:
+75% used to train the model, 25% to test the mode and to calculate the real error.
 
-As predictor will use only the ones from the previous figure. The basic
+
+As predictor, I will use only the ones from the previous figure: the basic
 information from the gadgets: `r names(clean_train)[raw]`.
 
 I will scale the predictors since they have very different values.
@@ -191,6 +192,9 @@ confusionMatrix(p1,te$classe)
 
 We got a good accuracy. Even it seems it's over-fitting.
 
+The expected **out-sample-error** is very low. According to the model the accuracy SD
+is 0.2%. When using the test data to calculate it, it showed 0.2% of mis-clasification.
+Then we expect none or one wrong prediction in the test data we have to submit for the course.
 
 ## caveat
 
@@ -201,8 +205,10 @@ to tell them how to do the exercise wrong. So, there are many aspect to study be
 getting a model that really works and can predict a well-done exercise from a
 bad-one.
 
+## Prediction for the test data downloaded
+
 ```{r test,eval=FALSE,echo=FALSE}
-# p1 = predict(model, clean_test) # this to answer the final test.
+predict(model, clean_test) # this to answer the final test.
 ```
 
 
